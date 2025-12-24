@@ -26,7 +26,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install mlflow dagshub scikit-learn pandas numpy joblib matplotlib seaborn
+          pip install mlflow dagshub scikit-learn pandas numpy joblib matplotlib seaborn scikit-optimize dagshub
 
       # 2. Configure DagsHub/MLflow Tracking
       - name: Set MLflow Tracking Credentials
