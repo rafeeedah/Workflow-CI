@@ -39,7 +39,7 @@ jobs:
       
       #3. Upload artifacts
       - name: Upload Artefacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ml-artifacts
           path: |
