@@ -10,10 +10,10 @@ from sklearn.metrics import accuracy_score, f1_score
 # =========================
 # LOAD DATA
 # =========================
-X_train = joblib.load("MLProject/german_credit_data_preprocessing/X_train.joblib")
-X_test = joblib.load("MLProject/german_credit_data_preprocessing/X_test.joblib")
-y_train = joblib.load("MLProject/german_credit_data_preprocessing/y_train.joblib")
-y_test = joblib.load("MLProject/german_credit_data_preprocessing/y_test.joblib")
+X_train = joblib.load("german_credit_data_preprocessing/X_train.joblib")
+X_test = joblib.load("german_credit_data_preprocessing/X_test.joblib")
+y_train = joblib.load("german_credit_data_preprocessing/y_train.joblib")
+y_test = joblib.load("german_credit_data_preprocessing/y_test.joblib")
 
 y_train = y_train.to_numpy()
 y_test = y_test.to_numpy()
@@ -21,7 +21,7 @@ y_test = y_test.to_numpy()
 # =========================
 # MLFLOW SETUP
 # =========================
-mlflow.set_experiment("German Credit Scoring - Autolog")
+mlflow.set_experiment("German Credit Scoring - Docker")
 mlflow.sklearn.autolog()
 
 # =========================
