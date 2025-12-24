@@ -58,7 +58,7 @@ jobs:
           python -m mlflow models build-docker -m "$MODEL_URI" -n "german-credit-image"
           
           # Tag ulang supaya sesuai Docker Hub
-          docker tag german-credit-image $IMAGE_NAME
+          docker tag german-credit-image ${{ secrets.DOCKER_USERNAME }}/german_credit_model:latest
 
           # Push image ke Docker Hub
-          docker push $IMAGE_NAME
+          docker push ${{ secrets.DOCKER_USERNAME }}/german_credit_model:latest
