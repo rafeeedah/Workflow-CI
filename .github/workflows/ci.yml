@@ -38,10 +38,13 @@ jobs:
 
       # 3. Promote Best Model to Registry Production
       - name: Promote Best Model to Registry
-        run: |
-          python MLProject/promote_best_model.py
         env:
-          MLFLOW_TRACKING_URI: https://${{ secrets.DAGSHUB_USERNAME }}:${{ secrets.DAGSHUB_TOKEN }}@dagshub.com/rafeeedah/german-credit-prediction.mlflow
+          MLFLOW_TRACKING_URI: https://dagshub.com/${{ secrets.DAGSHUB_USERNAME }}/german-credit-prediction.mlflow
+          MLFLOW_TRACKING_USERNAME: ${{ secrets.DAGSHUB_USERNAME }}
+          MLFLOW_TRACKING_PASSWORD: ${{ secrets.DAGSHUB_TOKEN }}
+        run: |
+          # Panggil script dari root repo
+          python MLProject/promote_best_model.py
 
       # 4. Login to Docker Hub
       - name: Login to Docker Hub
@@ -52,16 +55,18 @@ jobs:
 
       # 5. Build Docker Image and Push to Docker Hub
       - name: Build Docker Image and Push to Docker Hub
+        env:
+          MLFLOW_TRACKING_URI: https://dagshub.com/${{ secrets.DAGSHUB_USERNAME }}/german-credit-prediction.mlflow
+          MLFLOW_TRACKING_USERNAME: ${{ secrets.DAGSHUB_USERNAME }}
+          MLFLOW_TRACKING_PASSWORD: ${{ secrets.DAGSHUB_TOKEN }}
         run: |
           MODEL_URI="models:/GermanCreditModel/Production"
           IMAGE_NAME="rafeeedah/german_credit_model"
           
-          mlflow models build-docker \
+          # Gunakan perintah mlflow build-docker yang disederhanakan
+          mlflow build-docker \
             --model-uri $MODEL_URI \
-            --name $IMAGE_NAME
+            --name $IMAGE_NAME:latest
           
-          docker tag $IMAGE_NAME:latest $IMAGE_NAME:${{ github.sha }}
+          # Push image hasil build dari MLflow
           docker push $IMAGE_NAME:latest
-          docker push $IMAGE_NAME:${{ github.sha }}
-        env:
-          MLFLOW_TRACKING_URI: https://${{ secrets.DAGSHUB_USERNAME }}:${{ secrets.DAGSHUB_TOKEN }}@dagshub.com/rafeeedah/german-credit-prediction.mlflow
