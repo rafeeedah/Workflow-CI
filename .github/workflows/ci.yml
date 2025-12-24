@@ -1,4 +1,4 @@
-name: MLflow CI Pipeline
+name: MLflow CI with Docker - Best Model
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  train-model:
+  train-and-deploy:
     runs-on: ubuntu-latest
     
     steps:
@@ -18,28 +18,29 @@ jobs:
       with:
         python-version: '3.9'
     
-    - name: Install MLflow
+    - name: Install dependencies
       run: |
-        pip install mlflow
+        pip install mlflow scikit-learn pandas numpy joblib matplotlib seaborn
     
-    - name: Run MLflow Project
+    - name: Run model training
       run: |
-        mlflow run MLProject --no-conda
-
-   - name: Save artifacts
-      run: |
-        mkdir -p artifacts
-        cp -r mlruns artifacts/
+        cd MLProject
+        python modelling.py
     
-    - name: Upload artifacts
-      uses: actions/upload-artifact@v3
-      with:
-        name: model-artifacts
-        path: artifacts/
-
-   - name: Build Docker image
+    - name: Get best model info
+      id: best_model
       run: |
-        mlflow models build-docker -m runs:/<run-id>/model -n your-dockerhub-username/model-name
+        cd MLProject
+        MODEL_NAME=$(grep "model_name=" best_model_info.txt | cut -d'=' -f2)
+        RUN_ID=$(grep "run_id=" best_model_info.txt | cut -d'=' -f2)
+        ACCURACY=$(grep "accuracy=" best_model_info.txt | cut -d'=' -f2)
+        echo "model_name=$MODEL_NAME" >> $GITHUB_OUTPUT
+        echo "run_id=$RUN_ID" >> $GITHUB_OUTPUT
+        echo "accuracy=$ACCURACY" >> $GITHUB_OUTPUT
+        echo "Best Model: $MODEL_NAME (Run ID: $RUN_ID, Accuracy: $ACCURACY)"
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
     
     - name: Login to Docker Hub
       uses: docker/login-action@v2
@@ -47,6 +48,66 @@ jobs:
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
     
-    - name: Push to Docker Hub
+    - name: Build Docker image for best model
       run: |
-        docker push your-dockerhub-username/model-name
+        cd MLProject
+        echo "Building Docker image for ${{ steps.best_model.outputs.model_name }}..."
+        mlflow models build-docker \
+          -m runs:/${{ steps.best_model.outputs.run_id }}/model \
+          -n ${{ secrets.DOCKER_USERNAME }}/german-credit-best:latest
+    
+    - name: Push Docker image to Docker Hub
+      run: |
+        docker push ${{ secrets.DOCKER_USERNAME }}/german-credit-best:latest
+        echo "✓ Docker image pushed successfully!"
+    
+    - name: Create Docker Hub link file
+      run: |
+        cd MLProject
+        cat > Docker_Hub_Link.txt << EOF
+German Credit Scoring - Best Model Docker Image
+================================================
+
+Best Model: ${{ steps.best_model.outputs.model_name }}
+Accuracy: ${{ steps.best_model.outputs.accuracy }}
+Run ID: ${{ steps.best_model.outputs.run_id }}
+
+Docker Hub Repository:
+https://hub.docker.com/r/${{ secrets.DOCKER_USERNAME }}/german-credit-best
+
+Docker Pull Command:
+docker pull ${{ secrets.DOCKER_USERNAME }}/german-credit-best:latest
+
+Docker Run Command:
+docker run -p 5001:8080 ${{ secrets.DOCKER_USERNAME }}/german-credit-best:latest
+
+Built using: mlflow models build-docker
+Date: $(date)
+EOF
+        cat Docker_Hub_Link.txt
+    
+    - name: Save artifacts
+      run: |
+        mkdir -p artifacts
+        cp -r MLProject/mlruns artifacts/
+        cp MLProject/best_model_info.txt artifacts/
+        cp MLProject/Docker_Hub_Link.txt artifacts/
+    
+    - name: Upload artifacts to GitHub
+      uses: actions/upload-artifact@v3
+      with:
+        name: model-artifacts
+        path: artifacts/
+    
+    - name: Commit Docker Hub link
+      run: |
+        git config --local user.email "github-actions[bot]@users.noreply.github.com"
+        git config --local user.name "github-actions[bot]"
+        git add MLProject/Docker_Hub_Link.txt MLProject/best_model_info.txt
+        git diff --quiet && git diff --staged --quiet || git commit -m "Add Docker Hub link and best model info [skip ci]"
+    
+    - name: Push changes
+      uses: ad-m/github-push-action@master
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        branch: main
