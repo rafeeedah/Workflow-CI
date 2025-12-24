@@ -1,7 +1,10 @@
-name: German_Credit_Prediction
+# MLProject (tanpa ekstensi)
 
+name: german-credit-ci
+
+# Definisikan lingkungan (conda) dan entry point
 conda_env: conda.yaml
-
 entry_points:
+  # Nama entry point 'main' yang akan menjalankan script modelling.py
   main:
     command: "python modelling.py"

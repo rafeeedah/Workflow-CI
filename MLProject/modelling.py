@@ -1,11 +1,26 @@
 import joblib
+import time
+import dagshub
 import mlflow
 import mlflow.sklearn
+import matplotlib.pyplot as plt
+import os
 
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.svm import SVC
-from sklearn.metrics import accuracy_score, f1_score
+
+from sklearn.metrics import (
+    accuracy_score,
+    f1_score,
+    roc_auc_score,
+    confusion_matrix,
+    ConfusionMatrixDisplay,
+    classification_report,
+)
+
+from skopt import BayesSearchCV
+from skopt.space import Integer, Real, Categorical
 
 # =========================
 # LOAD DATA
@@ -21,56 +36,110 @@ y_test = y_test.to_numpy()
 # =========================
 # MLFLOW SETUP
 # =========================
-mlflow.set_experiment("German Credit Scoring - Docker")
-mlflow.sklearn.autolog()
+dagshub.init(repo_owner='rafeeedah',
+             repo_name='german-credit-prediction',
+             mlflow=True)
+mlflow.set_experiment("German Credit Scoring - Tuning All Models")
 
 # =========================
-# MODELS (NO TUNING)
+# MODEL CONFIGS
 # =========================
 models = {
-    "LogisticRegression": LogisticRegression(max_iter=1000),
-    "RandomForest": RandomForestClassifier(random_state=42),
-    "SVC": SVC()
+    "LogisticRegression": {
+        "estimator": LogisticRegression(max_iter=2000),
+        "search_space": {
+            "C": Real(1e-3, 10.0, prior="log-uniform"),
+            "penalty": Categorical(["l2"]),
+            "solver": Categorical(["lbfgs"]),
+        },
+    },
+    "RandomForest": {
+        "estimator": RandomForestClassifier(random_state=42),
+        "search_space": {
+            "n_estimators": Integer(100, 500),
+            "max_depth": Integer(3, 20),
+            "min_samples_split": Integer(2, 10),
+            "min_samples_leaf": Integer(1, 5),
+        },
+    },
+    "SVC": {
+        "estimator": SVC(probability=True),
+        "search_space": {
+            "C": Real(1e-3, 10.0, prior="log-uniform"),
+            "gamma": Real(1e-4, 1.0, prior="log-uniform"),
+            "kernel": Categorical(["rbf"]),
+        },
+    },
 }
 
 # =========================
-# TRAIN MODELS
+# TRAIN, TUNE & LOG
 # =========================
-for name, model in models.items():
-    with mlflow.start_run(run_name=name):
-        model.fit(X_train, y_train)
-        model.score(X_test, y_test)
+for model_name, config in models.items():
+
+    with mlflow.start_run(run_name=f"{model_name}_BayesSearch"):
+
+        bayes_search = BayesSearchCV(
+            estimator=config["estimator"],
+            search_spaces=config["search_space"],
+            n_iter=20,
+            scoring="f1",
+            cv=3,
+            n_jobs=-1,
+            random_state=42,
+        )
+
+        bayes_search.fit(X_train, y_train)
+
+        best_model = bayes_search.best_estimator_
+        y_pred = best_model.predict(X_test)
+        y_proba = best_model.predict_proba(X_test)[:, 1]
+
+        # ---- METRICS ----
+        acc = accuracy_score(y_test, y_pred)
+        f1 = f1_score(y_test, y_pred)
+        roc_auc = roc_auc_score(y_test, y_proba)
+
+        mlflow.log_metric("accuracy", acc)
+        mlflow.log_metric("f1_score", f1)
+        mlflow.log_metric("roc_auc", roc_auc)
+
+        # ---- PARAMETERS ----
+        for param, value in bayes_search.best_params_.items():
+            mlflow.log_param(param, value)
+
+        # ---- MODEL ----
+        mlflow.sklearn.log_model(best_model, artifact_path="model")
+
+        # =========================
+        # ARTIFACT 1: Confusion Matrix
+        # =========================
+        cm = confusion_matrix(y_test, y_pred)
+        disp = ConfusionMatrixDisplay(cm)
+        disp.plot()
+        plt.title(f"{model_name} Confusion Matrix")
+
+        cm_file = f"{model_name}_confusion_matrix.png"
+        plt.savefig(cm_file)
+        plt.close()
+
+        mlflow.log_artifact(cm_file)
+        time.sleep(3)
+        os.remove(cm_file)
+
+        # =========================
+        # ARTIFACT 2: Classification Report
+        # =========================
+        report = classification_report(y_test, y_pred)
+        report_file = f"{model_name}_classification_report.txt"
+
+        with open(report_file, "w") as f:
+            f.write(report)
+
+        mlflow.log_artifact(report_file)
+        time.sleep(3)
+        os.remove(report_file)
+
+        print(f"{model_name} tuning completed")
 
 
-# =========================
-# FIND AND SAVE BEST MODEL INFO
-# =========================
-print("\n" + "="*50)
-print("Finding best model...")
-print("="*50)
-
-client = mlflow.tracking.MlflowClient()
-experiment = client.get_experiment_by_name("German Credit Scoring - Docker")
-runs = client.search_runs(
-    experiment.experiment_id, 
-    order_by=["metrics.training_accuracy_score DESC"],
-    max_results=1
-)
-
-best_run = runs[0]
-best_model_name = best_run.data.tags.get('mlflow.runName', 'unknown')
-best_run_id = best_run.info.run_id
-best_accuracy = best_run.data.metrics.get('training_accuracy_score', 0.0)
-
-print(f"\nBest Model: {best_model_name}")
-print(f"Run ID: {best_run_id}")
-print(f"Accuracy: {best_accuracy:.4f}")
-print("="*50)
-
-# Save to file for GitHub Actions
-with open("best_model_info.txt", "w") as f:
-    f.write(f"model_name={best_model_name}\n")
-    f.write(f"run_id={best_run_id}\n")
-    f.write(f"accuracy={best_accuracy}\n")
-
-print("\n✓ Best model info saved to best_model_info.txt")
