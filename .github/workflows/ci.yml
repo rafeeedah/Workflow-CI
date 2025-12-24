@@ -28,11 +28,13 @@ jobs:
 
       # 2. Run MLflow Project (Training)
       - name: Run MLflow Project for Training
+        env:
+          MLFLOW_TRACKING_URI: https://dagshub.com/${{ secrets.DAGSHUB_USERNAME }}/${{ secrets.DAGSHUB_REPO_NAME }}.mlflow
+          MLFLOW_TRACKING_USERNAME: ${{ secrets.DAGSHUB_USERNAME }}
+          MLFLOW_TRACKING_PASSWORD: ${{ secrets.DAGSHUB_TOKEN }}
         run: |
           cd MLProject
           mlflow run . --env-manager=local
-        env:
-          MLFLOW_TRACKING_URI: https://${{ secrets.DAGSHUB_USERNAME }}:${{ secrets.DAGSHUB_TOKEN }}@dagshub.com/rafeeedah/german-credit-prediction.mlflow
 
       # 3. Promote Best Model to Registry Production
       - name: Promote Best Model to Registry

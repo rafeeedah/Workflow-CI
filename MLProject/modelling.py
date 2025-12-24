@@ -36,12 +36,12 @@ y_test = y_test.to_numpy()
 # =========================
 # MLFLOW SETUP
 # =========================
-dagshub.init(repo_owner='rafeeedah',
-             repo_name='german-credit-prediction',
-             mlflow=False)
+USERNAME = "rafeeedah"
+REPO_NAME = "german-credit-prediction"
+TOKEN = os.getenv("MLFLOW_TRACKING_PASSWORD") # Mengambil dari secrets.DAGSHUB_TOKEN
 
-mlflow.set_tracking_uri(f"https://{os.environ['DAGSHUB_USERNAME']}:{os.environ['DAGSHUB_TOKEN']}@dagshub.com/rafeeedah/german-credit-prediction.mlflow")
-mlflow.set_experiment("German Credit Scoring - Tuning All Models")
+# Setup Tracking Remote secara manual
+mlflow.set_tracking_uri(f"https://dagshub.com/{USERNAME}/{REPO_NAME}.mlflow")
 
 # =========================
 # MODEL CONFIGS
