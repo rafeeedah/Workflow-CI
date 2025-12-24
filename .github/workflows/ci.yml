@@ -39,7 +39,6 @@ jobs:
       # 3. Run MLflow Project (Training) - FIXED
       - name: Run MLflow Project for Training
         run: |
-          # Gunakan --no-conda untuk menghindari masalah environment
           cd MLProject
           mlflow run . --env-manager=local
         env:

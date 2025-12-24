@@ -7,9 +7,8 @@ dependencies:
   - pip
   - pip:
       - mlflow
-      - scikit-learn
-      - pandas
-      - numpy
-      - joblib
       - dagshub
+      - joblib
+      - scikit-learn
       - matplotlib
+      - scikit-optimize
