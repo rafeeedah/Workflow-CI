@@ -38,7 +38,9 @@ y_test = y_test.to_numpy()
 # =========================
 dagshub.init(repo_owner='rafeeedah',
              repo_name='german-credit-prediction',
-             mlflow=True)
+             mlflow=False)
+
+mlflow.set_tracking_uri(f"https://{os.environ['DAGSHUB_USERNAME']}:{os.environ['DAGSHUB_TOKEN']}@dagshub.com/rafeeedah/german-credit-prediction.mlflow")
 mlflow.set_experiment("German Credit Scoring - Tuning All Models")
 
 # =========================
