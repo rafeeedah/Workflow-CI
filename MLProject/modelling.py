@@ -111,7 +111,7 @@ for model_name, config in models.items():
             mlflow.log_param(param, value)
 
         # ---- MODEL ----
-        mlflow.sklearn.log_model(best_model, artifact_path="model")
+        mlflow.sklearn.log_model(best_model, name="model")
 
         # =========================
         # ARTIFACT 1: Confusion Matrix
