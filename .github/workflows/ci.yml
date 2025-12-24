@@ -1,4 +1,4 @@
-# .github/workflows/ci.yml (FINAL FIX - Wajib Conda)
+# .github/workflows/ci.yml
 
 name: CI - Retrain Model and Build Docker
 
@@ -7,75 +7,62 @@ on:
     branches:
       - main
     paths:
-      - 'MLProject/**' 
+      - 'MLProject/**' # Hanya trigger jika ada perubahan di MLProject
   workflow_dispatch:
 
 jobs:
   train-and-dockerize:
     runs-on: ubuntu-latest
     steps:
-      # 1. Checkout Code
       - uses: actions/checkout@v3
 
-      # 2. Setup Conda/Mamba (Menggunakan 'mamba-latest' dan memaksa shell bash)
-      - name: Setup Mambaforge (Fast Conda Environment)
-        uses: conda-incubator/setup-miniconda@v2
+      # 1. Setup Environment
+      - name: Set up Python
+        uses: actions/setup-python@v3
         with:
-          miniconda-version: "latest"
-          mamba-version: "latest"
-          # Menonaktifkan aktivasi otomatis agar kita bisa mengontrolnya
-          auto-activate-base: false 
-          # Penting: setup-miniconda akan membuat file inisialisasi Conda
-          
-      # 3. Inisialisasi Shell dan Install Base Tools
-      - name: Initialize Conda & Install MLflow/DagsHub
-        # Gunakan shell bash -l (login shell) untuk memastikan .bashrc/Conda diinisialisasi
-        shell: bash -l {0} 
+          python-version: '3.9'
+
+      - name: Install dependencies
         run: |
-          # Perintah Conda/Mamba sekarang akan berjalan di shell yang sudah terinisialisasi
-          mamba install -y mlflow dagshub
-          
-      # 4. Configure DagsHub/MLflow Tracking
+          pip install mlflow dagshub
+      # 2. Configure DagsHub/MLflow Tracking
       - name: Set MLflow Tracking Credentials
         run: echo "MLFLOW_TRACKING_URI=https://dagshub.com/rafeeedah/german-credit-prediction.mlflow" >> $GITHUB_ENV
         env:
           MLFLOW_TRACKING_USERNAME: ${{ secrets.DAGSHUB_USERNAME }}
           MLFLOW_TRACKING_PASSWORD: ${{ secrets.DAGSHUB_TOKEN }}
           
-      # 5. Run MLflow Project (Training)
+      # 3. Run MLflow Project (Training)
       - name: Run MLflow Project for Training
-        # Gunakan shell yang terinisialisasi agar 'mlflow run' menemukan Conda
-        shell: bash -l {0} 
+        # Perintah ini akan menjalankan modelling.py
         run: |
           mlflow run ./MLProject
         env:
           MLFLOW_TRACKING_USERNAME: ${{ secrets.DAGSHUB_USERNAME }}
           MLFLOW_TRACKING_PASSWORD: ${{ secrets.DAGSHUB_TOKEN }}
           
-      # 6. Promosi Model Terbaik ke Registry Production
+      # BARU: 4. Promosi Model Terbaik ke Registry Production
       - name: Promote Best Model to Registry
-        shell: bash -l {0} 
         run: |
           python MLProject/promote_best_model.py
         env:
           MLFLOW_TRACKING_USERNAME: ${{ secrets.DAGSHUB_USERNAME }}
           MLFLOW_TRACKING_PASSWORD: ${{ secrets.DAGSHUB_TOKEN }}
           
-      # 7. Login ke Docker Hub (Tidak perlu shell: bash -l)
+      # 5. Build and Push Docker Image (Ambil dari Registry Production)
       - name: Login to Docker Hub
         uses: docker/login-action@v2
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_TOKEN }}
+        # ... (kode login)
 
-      # 8. Build and Push Docker Image (Kriteria 3 Advance)
       - name: Build Docker Image and Push to Docker Hub
-        shell: bash -l {0} 
         run: |
-          MODEL_URI="models:/GermanCreditModel/Production" 
+          # Perubahan utama: Tarik model dari Model Registry, bukan dari run:/latest
+          MODEL_URI="models:/GermanCreditModel/Production" # Ganti dengan nama MODEL_NAME di script
           IMAGE_NAME="rafeeedah/german_credit_model"
           
           mlflow build-docker --model-uri $MODEL_URI --name $IMAGE_NAME:latest
         env:
           MLFLOW_TRACKING_USERNAME: ${{ secrets.DAGSHUB_USERNAME }}
           MLFLOW_TRACKING_PASSWORD: ${{ secrets.DAGSHUB_TOKEN }}
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_TOKEN: ${{ secrets.DOCKER_TOKEN }}
