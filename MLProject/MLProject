@@ -1,10 +1,14 @@
-# MLProject (tanpa ekstensi)
+# MLProject (file di dalam folder MLProject)
 
 name: german-credit-ci
 
 # Definisikan lingkungan (conda) dan entry point
 conda_env: conda.yaml
 entry_points:
-  # Nama entry point 'main' yang akan menjalankan script modelling.py
   main:
+    # PERUBAHAN UTAMA DI SINI: tambahkan parameter use_conda_run
     command: "python modelling.py"
+    parameters: {}
+    # Perintah ini akan memaksa MLflow menggunakan 'conda run' untuk menjalankan perintah di atas
+    # Ini mengatasi masalah 'activate: No such file or directory'
+    use_conda_run: True
