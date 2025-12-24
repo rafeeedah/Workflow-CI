@@ -1,5 +1,4 @@
 # .github/workflows/ci.yml
-
 name: CI - Retrain Model and Build Docker
 
 on:
@@ -13,6 +12,9 @@ on:
 jobs:
   train-and-dockerize:
     runs-on: ubuntu-latest
+    env:
+      MLFLOW_TRACKING_URI: https://dagshub.com/rafeeedah/german-credit-prediction.mlflow
+    
     steps:
       - uses: actions/checkout@v3
 
@@ -24,45 +26,59 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install mlflow dagshub
+          pip install mlflow dagshub scikit-learn pandas numpy joblib matplotlib seaborn
+
       # 2. Configure DagsHub/MLflow Tracking
       - name: Set MLflow Tracking Credentials
-        run: echo "MLFLOW_TRACKING_URI=https://dagshub.com/rafeeedah/german-credit-prediction.mlflow" >> $GITHUB_ENV
-        env:
-          MLFLOW_TRACKING_USERNAME: ${{ secrets.DAGSHUB_USERNAME }}
-          MLFLOW_TRACKING_PASSWORD: ${{ secrets.DAGSHUB_TOKEN }}
-          
-      # 3. Run MLflow Project (Training)
-      - name: Run MLflow Project for Training
-        # Perintah ini akan menjalankan modelling.py
         run: |
-          mlflow run ./MLProject
+          echo "MLFLOW_TRACKING_URI=https://dagshub.com/rafeeedah/german-credit-prediction.mlflow" >> $GITHUB_ENV
         env:
           MLFLOW_TRACKING_USERNAME: ${{ secrets.DAGSHUB_USERNAME }}
           MLFLOW_TRACKING_PASSWORD: ${{ secrets.DAGSHUB_TOKEN }}
           
-      # BARU: 4. Promosi Model Terbaik ke Registry Production
+      # 3. Run MLflow Project (Training) - FIXED
+      - name: Run MLflow Project for Training
+        run: |
+          # Gunakan --no-conda untuk menghindari masalah environment
+          cd MLProject
+          mlflow run . --no-conda
+        env:
+          MLFLOW_TRACKING_USERNAME: ${{ secrets.DAGSHUB_USERNAME }}
+          MLFLOW_TRACKING_PASSWORD: ${{ secrets.DAGSHUB_TOKEN }}
+          MLFLOW_TRACKING_URI: https://dagshub.com/rafeeedah/german-credit-prediction.mlflow
+          
+      # 4. Promosi Model Terbaik ke Registry Production
       - name: Promote Best Model to Registry
         run: |
           python MLProject/promote_best_model.py
         env:
           MLFLOW_TRACKING_USERNAME: ${{ secrets.DAGSHUB_USERNAME }}
           MLFLOW_TRACKING_PASSWORD: ${{ secrets.DAGSHUB_TOKEN }}
+          MLFLOW_TRACKING_URI: https://dagshub.com/rafeeedah/german-credit-prediction.mlflow
           
-      # 5. Build and Push Docker Image (Ambil dari Registry Production)
+      # 5. Login to Docker Hub
       - name: Login to Docker Hub
         uses: docker/login-action@v2
-        # ... (kode login)
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_TOKEN }}
 
+      # 6. Build Docker Image and Push to Docker Hub - FIXED
       - name: Build Docker Image and Push to Docker Hub
         run: |
-          # Perubahan utama: Tarik model dari Model Registry, bukan dari run:/latest
-          MODEL_URI="models:/GermanCreditModel/Production" # Ganti dengan nama MODEL_NAME di script
+          # Gunakan mlflow models build-docker, bukan mlflow build-docker
+          MODEL_URI="models:/GermanCreditModel/Production"
           IMAGE_NAME="rafeeedah/german_credit_model"
           
-          mlflow build-docker --model-uri $MODEL_URI --name $IMAGE_NAME:latest
+          mlflow models build-docker \
+            --model-uri $MODEL_URI \
+            --name $IMAGE_NAME
+          
+          # Tag dan push image
+          docker tag $IMAGE_NAME:latest $IMAGE_NAME:${{ github.sha }}
+          docker push $IMAGE_NAME:latest
+          docker push $IMAGE_NAME:${{ github.sha }}
         env:
           MLFLOW_TRACKING_USERNAME: ${{ secrets.DAGSHUB_USERNAME }}
           MLFLOW_TRACKING_PASSWORD: ${{ secrets.DAGSHUB_TOKEN }}
-          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-          DOCKER_TOKEN: ${{ secrets.DOCKER_TOKEN }}
+          MLFLOW_TRACKING_URI: https://dagshub.com/rafeeedah/german-credit-prediction.mlflow
