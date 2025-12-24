@@ -111,7 +111,15 @@ for model_name, config in models.items():
             mlflow.log_param(param, value)
 
         # ---- MODEL ----
-        mlflow.sklearn.log_model(best_model, name="model")
+        if model_name == "RandomForest":
+            mlflow.sklearn.log_model(best_model,
+                                     name = "random_forest_model", 
+                                     registered_model_name = "RandomForestGermanCreditModel"
+                                    )
+        else:
+            mlflow.sklearn.log_model(best_model,
+                                     name = f"{model_name.lower()}_model", 
+                                    )
 
         # =========================
         # ARTIFACT 1: Confusion Matrix
@@ -143,5 +151,6 @@ for model_name, config in models.items():
         os.remove(report_file)
 
         print(f"{model_name} tuning completed")
+
 
 

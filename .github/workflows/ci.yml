@@ -36,16 +36,6 @@ jobs:
           cd MLProject
           mlflow run . --env-manager=local
 
-      # 3. Promote Best Model to Registry Production
-      - name: Promote Best Model to Registry
-        env:
-          MLFLOW_TRACKING_URI: https://dagshub.com/${{ secrets.DAGSHUB_USERNAME }}/german-credit-prediction.mlflow
-          MLFLOW_TRACKING_USERNAME: ${{ secrets.DAGSHUB_USERNAME }}
-          MLFLOW_TRACKING_PASSWORD: ${{ secrets.DAGSHUB_TOKEN }}
-        run: |
-          # Panggil script dari root repo
-          python MLProject/promote_best_model.py
-
       # 4. Login to Docker Hub
       - name: Login to Docker Hub
         uses: docker/login-action@v2
@@ -60,7 +50,7 @@ jobs:
           MLFLOW_TRACKING_USERNAME: ${{ secrets.DAGSHUB_USERNAME }}
           MLFLOW_TRACKING_PASSWORD: ${{ secrets.DAGSHUB_TOKEN }}
         run: |
-          MODEL_URI="models:/GermanCreditModel/Production"
+          MODEL_URI="RandomForestGermanCreditModel"
           IMAGE_NAME="rafeeedah/german_credit_model"
           
           # Gunakan perintah mlflow build-docker yang disederhanakan
