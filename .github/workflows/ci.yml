@@ -50,13 +50,13 @@ jobs:
           MLFLOW_TRACKING_USERNAME: ${{ secrets.DAGSHUB_USERNAME }}
           MLFLOW_TRACKING_PASSWORD: ${{ secrets.DAGSHUB_TOKEN }}
         run: |
-          MODEL_URI="RandomForestGermanCreditModel"
-          IMAGE_NAME="rafeeedah/german_credit_model"
+          IMAGE_NAME="rafeeedah/german_credit_model:latest"
           
-          # Gunakan perintah mlflow build-docker yang disederhanakan
+          # Gunakan model registry URI
+          MODEL_URI="models:/RandomForestGermanCreditModel/1"
+          
           mlflow build-docker \
             --model-uri $MODEL_URI \
-            --name $IMAGE_NAME:latest
+            --name $IMAGE_NAME
           
-          # Push image hasil build dari MLflow
-          docker push $IMAGE_NAME:latest
+          docker push $IMAGE_NAME
