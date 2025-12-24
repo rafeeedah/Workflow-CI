@@ -36,6 +36,16 @@ jobs:
         run: |
           cd MLProject
           mlflow run . --env-manager=local
+      
+      #3. Upload artifacts
+      - name: Upload Artefacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: ml-artifacts
+          path: |
+            MLProject/*.txt
+            MLProject/*.png
+            MLProject/*.joblib  # kalau ingin menyimpan model
 
       # 4. Login to Docker Hub
       - name: Login to Docker Hub
