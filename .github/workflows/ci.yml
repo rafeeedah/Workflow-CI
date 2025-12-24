@@ -66,9 +66,8 @@ jobs:
       - name: Create Docker Hub link file
         working-directory: MLProject
         run: |
-          cat > Docker_Hub_Link.txt <<EOF
+          cat > Docker_Hub_Link.txt << 'EOF'
 German Credit Scoring - Best Model Docker Image
-================================================
 
 Best Model: ${{ steps.best_model.outputs.model_name }}
 Accuracy: ${{ steps.best_model.outputs.accuracy }}
