@@ -26,13 +26,12 @@ jobs:
         run: |
           pip install mlflow dagshub
 
-      # 2. Configure DagsHub/MLflow Tracking (Gunakan Secrets)
+      # 2. Configure DagsHub/MLflow Tracking
       - name: Set MLflow Tracking Credentials
+        run: echo "MLFLOW_TRACKING_URI=https://dagshub.com/rafeeedah/german-credit-prediction.mlflow" >> $GITHUB_ENV
         env:
           MLFLOW_TRACKING_USERNAME: ${{ secrets.DAGSHUB_USERNAME }}
           MLFLOW_TRACKING_PASSWORD: ${{ secrets.DAGSHUB_TOKEN }}
-        run: |
-          mlflow tracking uri set https://dagshub.com/rafeeedah/german-credit-prediction.mlflow
           
       # 3. Run MLflow Project (Training)
       - name: Run MLflow Project for Training
