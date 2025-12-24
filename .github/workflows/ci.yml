@@ -7,7 +7,7 @@ on:
     branches:
       - main
     paths:
-      - 'MLProject/**' # Hanya trigger jika ada perubahan di MLProject
+      - 'MLProject/**' # Trigger hanya jika ada perubahan di MLProject
   workflow_dispatch:
 
 jobs:
@@ -17,59 +17,57 @@ jobs:
       # 1. Checkout Code
       - uses: actions/checkout@v3
 
-      # 2. Setup Environment (Menggunakan Mamba untuk Conda/MLflow)
+      # 2. Setup Conda/Mamba (Dibuat lebih stabil tanpa parameter 'environment-file')
       - name: Setup Mambaforge (Fast Conda Environment)
         uses: conda-incubator/setup-miniconda@v2
         with:
           miniconda-version: "latest"
           mamba-version: "latest"
           auto-update-conda: true
-          auto-activate-base: true
-          # Menginstalnya dari file environment agar MLflow run lebih mulus
-          environment-file: MLProject/conda.yaml 
-
+          # Penting: Kita tidak menggunakan 'environment-file' di sini untuk menghindari error instalasi
+          
+      # 3. Install Alat MLflow dan DagsHub (agar perintah CLI dapat dijalankan)
       - name: Install MLflow and DagsHub (for CLI usage)
-        # Menggunakan mamba untuk menginstal alat yang digunakan di luar Conda Env MLProject
         run: |
           mamba install -y mlflow dagshub
 
-      # 3. Configure DagsHub/MLflow Tracking
+      # 4. Configure DagsHub/MLflow Tracking (Menggunakan Variabel Lingkungan)
       - name: Set MLflow Tracking Credentials
-        # Mengatur MLFLOW_TRACKING_URI sebagai Variabel Lingkungan
+        # Mengatur MLFLOW_TRACKING_URI untuk semua langkah berikutnya
         run: echo "MLFLOW_TRACKING_URI=https://dagshub.com/rafeeedah/german-credit-prediction.mlflow" >> $GITHUB_ENV
         env:
           MLFLOW_TRACKING_USERNAME: ${{ secrets.DAGSHUB_USERNAME }}
           MLFLOW_TRACKING_PASSWORD: ${{ secrets.DAGSHUB_TOKEN }}
           
-      # 4. Run MLflow Project (Training)
+      # 5. Run MLflow Project (Training)
       - name: Run MLflow Project for Training
-        # Ini akan menjalankan modelling.py dan log ke DagsHub
+        # MLflow akan membaca MLProject dan conda.yaml, lalu menggunakan 'conda run'
         run: |
           mlflow run ./MLProject
         env:
           MLFLOW_TRACKING_USERNAME: ${{ secrets.DAGSHUB_USERNAME }}
           MLFLOW_TRACKING_PASSWORD: ${{ secrets.DAGSHUB_TOKEN }}
           
-      # 5. Promosi Model Terbaik ke Registry Production
+      # 6. Promosi Model Terbaik ke Registry Production
       - name: Promote Best Model to Registry
-        # Ini akan menjalankan promote_best_model.py
         run: |
           python MLProject/promote_best_model.py
         env:
           MLFLOW_TRACKING_USERNAME: ${{ secrets.DAGSHUB_USERNAME }}
           MLFLOW_TRACKING_PASSWORD: ${{ secrets.DAGSHUB_TOKEN }}
           
-      # 6. Login ke Docker Hub (Koreksi: Menambahkan input 'with:')
+      # 7. Login ke Docker Hub
       - name: Login to Docker Hub
         uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_TOKEN }}
 
-      # 7. Build and Push Docker Image (Ambil dari Registry Production)
+      # 8. Build and Push Docker Image (Kriteria 3 Advance)
       - name: Build Docker Image and Push to Docker Hub
         run: |
-          MODEL_URI="models:/GermanCreditModel/Production"
+          # Tarik model terbaik (Production) dari Model Registry
+          MODEL_URI="models:/GermanCreditModel/Production" 
           IMAGE_NAME="rafeeedah/german_credit_model"
           
           mlflow build-docker --model-uri $MODEL_URI --name $IMAGE_NAME:latest
