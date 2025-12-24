@@ -121,6 +121,9 @@ for model_name, config in models.items():
                                      name = f"{model_name.lower()}_model", 
                                     )
 
+        artifact_dir = "artifacts"
+        os.makedirs(artifact_dir, exist_ok=True)
+
         # =========================
         # ARTIFACT 1: Confusion Matrix
         # =========================
@@ -129,26 +132,18 @@ for model_name, config in models.items():
         disp.plot()
         plt.title(f"{model_name} Confusion Matrix")
 
-        cm_file = f"{model_name}_confusion_matrix.png"
+        cm_file = os.path.join(artifact_dir, f"{model_name}_confusion_matrix.png")
         plt.savefig(cm_file)
-        plt.close()
-
         mlflow.log_artifact(cm_file)
-        time.sleep(3)
-        os.remove(cm_file)
 
         # =========================
         # ARTIFACT 2: Classification Report
         # =========================
         report = classification_report(y_test, y_pred)
-        report_file = f"{model_name}_classification_report.txt"
-
+        report_file = os.path.join(artifact_dir, f"{model_name}_classification_report.txt")
         with open(report_file, "w") as f:
             f.write(report)
-
         mlflow.log_artifact(report_file)
-        time.sleep(3)
-        os.remove(report_file)
 
         print(f"{model_name} tuning completed")
 

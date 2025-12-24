@@ -43,9 +43,7 @@ jobs:
         with:
           name: ml-artifacts
           path: |
-            MLProject/*.txt
-            MLProject/*.png
-            MLProject/*.joblib  # kalau ingin menyimpan model
+            path: MLProject/artifacts/*
 
       # 4. Login to Docker Hub
       - name: Login to Docker Hub
