@@ -55,10 +55,10 @@ jobs:
           MODEL_URI="models:/RandomForestGermanCreditModel/1"
           
           # Build Docker image dari model MLflow
-          python -m mlflow models build-docker -m "$MODEL_URI" -n "hotel-model-image"
+          python -m mlflow models build-docker -m "$MODEL_URI" -n "german-credit-image"
           
           # Tag ulang supaya sesuai Docker Hub
-          docker tag hotel-model-image $IMAGE_NAME
-          
+          docker tag german-credit-image $IMAGE_NAME
+
           # Push image ke Docker Hub
           docker push $IMAGE_NAME
