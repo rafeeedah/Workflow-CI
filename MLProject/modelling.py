@@ -116,36 +116,35 @@ for model_name, config in models.items():
                                      name = "random_forest_model", 
                                      registered_model_name = "RandomForestGermanCreditModel"
                                     )
+            artifact_dir = "artifacts"
+            os.makedirs(artifact_dir, exist_ok=True)
+
+            # =========================
+            # ARTIFACT 1: Confusion Matrix
+            # =========================
+            cm = confusion_matrix(y_test, y_pred)
+            disp = ConfusionMatrixDisplay(cm)
+            disp.plot()
+            plt.title(f"{model_name} Confusion Matrix")
+
+            cm_file = os.path.join(artifact_dir, f"confusion_matrix.png")
+            plt.savefig(cm_file)
+            mlflow.log_artifact(cm_file)
+
+            # =========================
+            # ARTIFACT 2: Classification Report
+            # =========================
+            report = classification_report(y_test, y_pred)
+            report_file = os.path.join(artifact_dir, f"classification_report.txt")
+            with open(report_file, "w") as f:
+                f.write(report)
+            mlflow.log_artifact(report_file)
+
+            print(f"{model_name} tuning completed")
         else:
             mlflow.sklearn.log_model(best_model,
                                      name = f"{model_name.lower()}_model", 
                                     )
-
-        artifact_dir = "artifacts"
-        os.makedirs(artifact_dir, exist_ok=True)
-
-        # =========================
-        # ARTIFACT 1: Confusion Matrix
-        # =========================
-        cm = confusion_matrix(y_test, y_pred)
-        disp = ConfusionMatrixDisplay(cm)
-        disp.plot()
-        plt.title(f"{model_name} Confusion Matrix")
-
-        cm_file = os.path.join(artifact_dir, f"{model_name}_confusion_matrix.png")
-        plt.savefig(cm_file)
-        mlflow.log_artifact(cm_file)
-
-        # =========================
-        # ARTIFACT 2: Classification Report
-        # =========================
-        report = classification_report(y_test, y_pred)
-        report_file = os.path.join(artifact_dir, f"{model_name}_classification_report.txt")
-        with open(report_file, "w") as f:
-            f.write(report)
-        mlflow.log_artifact(report_file)
-
-        print(f"{model_name} tuning completed")
 
 
 
