@@ -55,7 +55,7 @@ jobs:
           MODEL_URI="models:/RandomForestGermanCreditModel/1"
           
           # Build Docker image dari model MLflow
-          python -m mlflow models build-docker -m "models:/hotel_booking_model_ali/1" -n "hotel-model-image"
+          python -m mlflow models build-docker -m MODEL_URI -n "hotel-model-image"
           
           # Push image ke Docker Hub
           docker push $IMAGE_NAME
