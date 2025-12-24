@@ -24,7 +24,8 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install mlflow dagshub scikit-learn pandas numpy joblib matplotlib seaborn scikit-optimize
+          pip install --upgrade pip
+          pip install mlflow>=2.6 dagshub scikit-learn pandas numpy joblib matplotlib scikit-optimize
 
       # 2. Run MLflow Project (Training)
       - name: Run MLflow Project for Training
@@ -51,12 +52,10 @@ jobs:
           MLFLOW_TRACKING_PASSWORD: ${{ secrets.DAGSHUB_TOKEN }}
         run: |
           IMAGE_NAME="rafeeedah/german_credit_model:latest"
-          
-          # Gunakan model registry URI
           MODEL_URI="models:/RandomForestGermanCreditModel/1"
           
-          mlflow build-docker \
-            --model-uri $MODEL_URI \
-            --name $IMAGE_NAME
+          # Build Docker image dari model MLflow
+          mlflow build-docker --model-uri $MODEL_URI --name $IMAGE_NAME
           
+          # Push image ke Docker Hub
           docker push $IMAGE_NAME
