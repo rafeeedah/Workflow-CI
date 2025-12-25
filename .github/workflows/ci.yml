@@ -47,7 +47,6 @@ jobs:
           ACCURACY=$(grep "^accuracy=" best_model_info.txt | cut -d'=' -f2)
           F1_SCORE=$(grep "^f1_score=" best_model_info.txt | cut -d'=' -f2)
           REGISTERED_NAME=$(grep "^registered_model_name=" best_model_info.txt | cut -d'=' -f2)
-
           
           echo "model_name=$MODEL_NAME" >> $GITHUB_OUTPUT
           echo "run_id=$RUN_ID" >> $GITHUB_OUTPUT
@@ -91,7 +90,7 @@ jobs:
           
           # Build using run_id (most reliable)
           mlflow models build-docker \
-            -m runs:/${{ steps.best_model.outputs.run_id }}/model \
+            -m runs:/${{ steps.best_model.outputs.run_id }}/${{ steps.best_model.outputs.model_name } \
             -n german-credit-best-model
           
           # Tag for Docker Hub
@@ -103,9 +102,3 @@ jobs:
           docker push ${{ secrets.DOCKER_USERNAME }}/german_credit_model:${{ steps.best_model.outputs.model_name }}
           
           echo "✓ Docker image pushed successfully!"
-
-      # 7. Create Docker Hub Link Documentation
-      - name: Create Docker Hub Link File
-        run: |
-          cd MLProject
-          cat > Docker_Hub_Link.txt << 'EOF'
