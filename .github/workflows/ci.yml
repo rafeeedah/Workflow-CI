@@ -90,7 +90,7 @@ jobs:
           
           # Build using run_id (most reliable)
           mlflow models build-docker \
-            -m runs:/${{ steps.best_model.outputs.run_id }}/${{ steps.best_model.outputs.model_name } \
+            -m runs:/${{ steps.best_model.outputs.run_id }}/${{ steps.best_model.outputs.model_name }} \
             -n german-credit-best-model
           
           # Tag for Docker Hub
