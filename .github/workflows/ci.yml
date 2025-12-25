@@ -42,11 +42,12 @@ jobs:
         id: best_model
         run: |
           cd MLProject
-          MODEL_NAME=$(grep "model_name=" best_model_info.txt | cut -d'=' -f2)
-          RUN_ID=$(grep "run_id=" best_model_info.txt | cut -d'=' -f2)
-          ACCURACY=$(grep "accuracy=" best_model_info.txt | cut -d'=' -f2)
-          F1_SCORE=$(grep "f1_score=" best_model_info.txt | cut -d'=' -f2)
-          REGISTERED_NAME=$(grep "registered_model_name=" best_model_info.txt | cut -d'=' -f2)
+          MODEL_NAME=$(grep "^model_name=" best_model_info.txt | cut -d'=' -f2 | tr -d '\n\r')
+          RUN_ID=$(grep "^run_id=" best_model_info.txt | cut -d'=' -f2)
+          ACCURACY=$(grep "^accuracy=" best_model_info.txt | cut -d'=' -f2)
+          F1_SCORE=$(grep "^f1_score=" best_model_info.txt | cut -d'=' -f2)
+          REGISTERED_NAME=$(grep "^registered_model_name=" best_model_info.txt | cut -d'=' -f2)
+
           
           echo "model_name=$MODEL_NAME" >> $GITHUB_OUTPUT
           echo "run_id=$RUN_ID" >> $GITHUB_OUTPUT
