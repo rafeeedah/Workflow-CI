@@ -1,9 +1,9 @@
-FROM german-credit-best-model
+FROM rafeeeda/german_credit_model:latest
 
-RUN pip install fastapi uvicorn
+RUN pip install --no-cache-dir fastapi uvicorn
 
-COPY app.py /app/app.py
 WORKDIR /app
+COPY app.py /app/app.py
 
 EXPOSE 8080
 
