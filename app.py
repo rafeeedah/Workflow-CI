@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 from typing import List
 import mlflow.pyfunc
+from prometheus_fastapi_instrumentator import Instrumentator 
 
 app = FastAPI()
 
@@ -18,3 +19,9 @@ def ping():
 def predict(req: PredictRequest):
     preds = model.predict(req.inputs)
     return {"predictions": preds.tolist()}
+
+class PredictRequest(BaseModel):
+    inputs: List[List[float]]
+
+# Add Prometheus metrics endpoint
+Instrumentator().instrument(app).expose(app)
