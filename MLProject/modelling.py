@@ -43,7 +43,6 @@ TOKEN = os.getenv("MLFLOW_TRACKING_PASSWORD") # Mengambil dari secrets.DAGSHUB_T
 
 # Setup Tracking Remote secara manual
 mlflow.set_tracking_uri(f"https://dagshub.com/{USERNAME}/{REPO_NAME}.mlflow")
-mlflow.set_experiment("German Credit Scoring and Serving Best Model")
 
 # =========================
 # MODEL CONFIGS
