@@ -1,12 +1,20 @@
 from fastapi import FastAPI
+from pydantic import BaseModel
+from typing import List
 import mlflow.pyfunc
 
 app = FastAPI()
 
-# load model when container starts
-model = mlflow.pyfunc.load_model("/mlflow/model")
+model = mlflow.pyfunc.load_model("/opt/ml/model")
+
+class PredictRequest(BaseModel):
+    inputs: List[List[float]]
+
+@app.get("/ping")
+def ping():
+    return {"status": "ok"}
 
 @app.post("/predict")
-def predict(data: dict):
-    preds = model.predict(data["inputs"])
+def predict(req: PredictRequest):
+    preds = model.predict(req.inputs)
     return {"predictions": preds.tolist()}
