@@ -20,12 +20,12 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v3
         with:
-          python-version: '3.9'
+          python-version: '3.12.7'
 
       - name: Install dependencies
         run: |
           pip install --upgrade pip
-          pip install mlflow>=2.6 dagshub scikit-learn pandas numpy joblib matplotlib scikit-optimize
+          pip install mlflow==2.19.0 dagshub==0.3.15 scikit-learn pandas numpy joblib matplotlib scikit-optimize
 
       # 2. Run MLflow Project (Training)
       - name: Run MLflow Project for Training
@@ -90,7 +90,7 @@ jobs:
           
           # Build using run_id (most reliable)
           mlflow models build-docker \
-            -m runs:/${{ steps.best_model.outputs.run_id }}/${{ steps.best_model.outputs.model_name }} \
+            -m runs:/${{ steps.best_model.outputs.run_id }}/model \
             -n german-credit-best-model
           
           # Tag for Docker Hub
