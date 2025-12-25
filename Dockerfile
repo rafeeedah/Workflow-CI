@@ -1,6 +1,6 @@
 FROM rafeeeda/german_credit_model:latest
 
-RUN pip install --no-cache-dir fastapi uvicorn
+RUN pip install --no-cache-dir fastapi uvicorn prometheus-fastapi-instrumentator
 
 WORKDIR /app
 COPY app.py /app/app.py
